@@ -50,3 +50,11 @@ Después de aplicar la corrección del ciclo de conexión:
 - npm run test:integration: 9 passing.
 - npm ci: 0 vulnerabilidades reportadas.
 La integración de M2 pendiente en los apartados anteriores queda verificada.
+
+### Prueba manual M2 — 28/09/2026
+- GET /api/mocks/dataset?qty=2: respuesta exitosa con datos relacionados.
+- POST /api/mocks/seed con {"qty":2}: informó 8 documentos insertados.
+- Lote: e6413e8b-0a7d-49a4-b279-0af202b3e5a4.
+- GET /api/users/9b71d08086927cebf2357265: recuperó el cliente creado.
+- La ausencia de persistencia del GET y las relaciones en MongoDB
+  fueron verificadas por la suite de integración.
