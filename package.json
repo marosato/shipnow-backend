@@ -1,0 +1,26 @@
+{
+  "name": "shipnow-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend III - Módulo 1",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "mocha --timeout 10000 \"tests/**/*.test.js\"",
+    "test:integration": "mocha --timeout 15000 tests/integration.mongodb.js"
+  },
+  "dependencies": {
+    "dotenv": "17.4.2",
+    "express": "5.2.1",
+    "mongoose": "9.10.1"
+  },
+  "devDependencies": {
+    "chai": "6.2.2",
+    "mocha": "12.0.1",
+    "supertest": "7.2.2"
+  }
+}
