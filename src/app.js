@@ -1,3 +1,4 @@
+import { ERRORS } from './errors/error-catalog.js';
 import express from 'express';
 import usersRouter from './routes/users.router.js';
 import productsRouter from './routes/products.router.js';
@@ -12,7 +13,7 @@ export function createApp({ mocksEnabled = false } = {}) {
   app.use('/api/users', usersRouter);
   app.use('/api/products', productsRouter);
   if (mocksEnabled) app.use('/api/mocks', mocksRouter);
-  app.use((req, res, next) => next(new AppError(404, 'Ruta no encontrada.')));
+  app.use((req, res, next) => next(new AppError(ERRORS.ROUTE_NOT_FOUND)));
   app.use(errorHandler);
   return app;
 }

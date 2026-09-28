@@ -58,3 +58,24 @@ La integración de M2 pendiente en los apartados anteriores queda verificada.
 - GET /api/users/9b71d08086927cebf2357265: recuperó el cliente creado.
 - La ausencia de persistencia del GET y las relaciones en MongoDB
   fueron verificadas por la suite de integración.
+
+## M3 — Preparación del 28/09/2026
+
+Base: commit b22747c publicado por la estudiante. Consigna contrastada con el PDF re-adjuntado, páginas impresas 68–70.
+
+- npm test: 69 passing en preparación (47 previas adaptadas + 22 nuevas).
+- La suite nueva comprueba contrato HTTP, errores inesperados, parser, normalización de errores de Mongoose simulados y fallos simulados de seed.
+- Integración real de M3: PENDIENTE en Windows. El resultado 9 passing de M2 no acredita la versión nueva.
+- No hay MongoDB instalado en este entorno; no se afirma ejecución real local.
+- No se agregan dependencias; package y lock actualizan la versión a 0.3.0.
+- M3 no se ha publicado en GitHub desde este paquete.
+
+### Validación M3 en Windows — 28/09/2026
+- Versión: 0.3.0.
+- npm test: 69 passing.
+- npm run test:integration: 9 passing.
+- GET /api/mocks/dataset?qty=-1: 400 INVALID_MOCK_AMOUNT.
+- GET /api/users/not-an-id: 400 INVALID_ID.
+- GET /ruta-inexistente: 404 ROUTE_NOT_FOUND.
+- Las tres respuestas manuales incluyen status, error y message.
+La integración y la comprobación manual de M3 quedan verificadas.

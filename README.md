@@ -1,4 +1,4 @@
-# ShipNow — Backend III · Módulos 1 y 2
+# ShipNow — Backend III · Módulos 1 a 3
 
 API académica incremental. Fuente del alcance: MATERIAL DE LECTURA - Programación Backend III, preentrega y rúbrica del Módulo 1, páginas impresas 21–23. Backend II no agrega requisitos.
 
@@ -73,7 +73,7 @@ Producto: `{"name":"Caja mediana","price":1500,"stock":3}`. price debe ser un n�
 
 Usuario: `{"name":"Ana Pérez","email":"ana@example.com"}`. Normaliza espacios y email en minúscula. El email debe ser único; el índice de MongoDB resuelve duplicados concurrentes. No admite role en el body.
 
-Éxito: `{"status":"success","data":...}`. Error mínimo: `{"status":"error","message":"..."}`. Códigos: 400 entrada inválida, 404 inexistente, 409 duplicado, 413 body demasiado grande, 500 fallo inesperado. Los errores no incluyen stack ni credenciales.
+Éxito: `{"status":"success","data":...}`. Error desde M3: `{"status":"error","error":"CODIGO_ESTABLE","message":"..."}`. Códigos: 400 entrada inválida, 404 inexistente, 409 duplicado, 413 body demasiado grande, 500 fallo inesperado. Los errores no incluyen stack ni credenciales.
 
 ## Prueba manual
 
@@ -127,7 +127,7 @@ El informe docs/VERIFICACION.md registra qué fue ejecutado. docs/MODULO-1.md co
 ## Límites conocidos y siguientes módulos
 
 - API local de aprendizaje, sin autenticación ni control de acceso; no preparada para exposición pública.
-- M3 completará catálogo de errores; M4 sustituirá consola por Winston.
+- M3 incorpora el catálogo de errores; M4 sustituirá consola por Winston.
 - M5 incorporará Swagger; M6 ampliará tests; M7 archivos; M8 Docker y health; M9 auditoría final.
 - price usa Number en esta base; no representa una decisión definitiva de precisión monetaria para cálculos futuros.
 - Validación simple de email: no verifica existencia ni propiedad del correo.
@@ -166,7 +166,7 @@ Invoke-RestMethod "http://127.0.0.1:8080/api/users/$($seed.data.ids.users[0])"
 
 En MongoDB Compass, filtrar users, orders y deliveries por `mockBatchId` devuelto por POST: deben existir 4 usuarios (2 clientes y 2 repartidores), 2 pedidos y 2 entregas. El lote de GET no debe existir. No hay rutas GET de negocio para pedidos/entregas todavía.
 
-El Service inserta usuarios antes de pedidos y entregas. Si una escritura falla, elimina exclusivamente el lote generado, en orden entregas → pedidos → usuarios. Si falla esa limpieza, conserva los padres e informa el lote para revisión. Esto NO es una transacción atómica: una caída del proceso puede dejar un lote parcial. No se exige configurar un replica set para esta etapa. Las pruebas de fallo usan repositorios simulados; no acreditan tolerancia a caídas de MongoDB.
+El Service inserta usuarios antes de pedidos y entregas. Si una escritura falla, elimina exclusivamente el lote generado, en orden entregas → pedidos → usuarios. Si falla esa limpieza, conserva los padres; desde M3 el UUID del lote se registra en la consola del servidor para revisión, sin incluirlo en el mensaje público. Esto NO es una transacción atómica: una caída del proceso puede dejar un lote parcial. No se exige configurar un replica set para esta etapa. Las pruebas de fallo usan repositorios simulados; no acreditan tolerancia a caídas de MongoDB.
 
 `npm test` incluye M1 y M2 sin base. `npm run test:integration` incluye ambas suites reales y requiere la configuración descartable indicada arriba; no necesita mantener npm run dev activo. La suite de M2 comprueba que GET no persiste y que dos POST crean lotes independientes con referencias válidas. Limpia por lotes propios, sin dropDatabase. Si se interrumpe, revisar la base de pruebas.
 
@@ -175,3 +175,78 @@ Ver docs/MODULO-2.md para aceptación y defensa; docs/CODIGO-MODULO-2.md para el
 ### Ciclo de conexión de las pruebas reales
 
 El script test:integration carga tests/integration.setup.js mediante --require. Este hook raíz abre una conexión para ambas suites, espera los cuatro modelos y cierra al terminar. Las suites limpian solo sus datos. Ejecutarlas con el script npm; no omitir el setup ni activar ejecución paralela.
+
+## Módulo 3 — Manejo profesional de errores
+
+Fuente: MATERIAL DE LECTURA - Programación Backend III, preentrega y rúbrica, páginas impresas 68–70; middleware y protección de detalles, páginas 59–66. La consigna exige errores personalizados, diccionario central con códigos/mensajes/status HTTP, respuesta uniforme, propagación por capas y aplicación a los módulos existentes y mocks. La rúbrica tiene cinco criterios de 20% y aprobación desde 70 puntos; cumplir tests no garantiza una nota.
+
+### Contrato de error
+
+```json
+{
+  "status": "error",
+  "error": "INVALID_MOCK_AMOUNT",
+  "message": "qty debe ser un entero entre 1 y 100."
+}
+```
+
+El campo error identifica el caso, el status HTTP indica su categoría y message es público. Las respuestas de éxito se mantienen. Desde M3 hay un campo adicional obligatorio en los errores; clientes con comparación estricta del JSON anterior deben actualizarse. No se exponen stack, cause, context, URI de MongoDB ni mensajes crudos de dependencias en ningún entorno.
+
+- src/errors/error-catalog.js: códigos, mensajes y status HTTP congelados; catálogo de los casos existentes.
+- src/errors/app-error.js: Error personalizado, con causa y contexto internos opcionales.
+- Services: detectan validación/negocio y lanzan AppError con una entrada del catálogo.
+- Controllers: continúan derivando con next; no construyen errores HTTP manualmente.
+- src/middlewares/error-handler.js: único formato JSON; traduce duplicados, errores de Mongoose, JSON y tamaño de body. Error desconocido: 500 INTERNAL_ERROR. Si headersSent, delega en Express porque ya no puede reemplazar una respuesta comenzada.
+- app.js: rutas, 404 y middleware de error, en ese orden.
+
+| Caso | HTTP | Código |
+|---|---|---|
+| ID inválido | 400 | INVALID_ID |
+| Usuario/producto inexistente | 404 | USER_NOT_FOUND / PRODUCT_NOT_FOUND |
+| Cantidad de mocks inválida | 400 | INVALID_MOCK_AMOUNT |
+| Query en POST seed | 400 | INVALID_MOCK_INPUT |
+| Email repetido | 409 | DUPLICATE_RESOURCE |
+| JSON mal formado | 400 | INVALID_JSON |
+| Body excesivo | 413 | PAYLOAD_TOO_LARGE |
+| Fallo de carga compensado | 500 | MOCK_LOAD_FAILED |
+| Fallo de compensación | 500 | MOCK_CLEANUP_FAILED |
+| Ruta inexistente | 404 | ROUTE_NOT_FOUND |
+| Error inesperado | 500 | INTERNAL_ERROR |
+
+El catálogo incluye también validación de texto, body, consulta, paginación, email, precio, stock y datos de Mongoose. No se agregan códigos ficticios para operaciones de pedidos aún no implementadas: cuando existan, tendrán sus reglas y errores propios. Los estados generados por M2 proceden de constantes; no hay endpoint de actualización de estado que validar todavía.
+
+Conservamos el error original en cause, y ambas causas en AggregateError cuando fallan escritura y limpieza. El registro provisional imprime código y UUID del lote si corresponde, nunca el error crudo. Winston y redacción estructurada se trabajan en M4. La compensación continúa sin ser atómica.
+
+### Prueba manual en Windows
+
+Con MongoDB activo y desde la carpeta con package.json:
+
+```powershell
+$env:ENABLE_MOCKS = 'true'
+$env:NODE_ENV = 'development'
+$env:PORT = '8080'
+npm run dev
+```
+
+Dejar esa terminal abierta. En una segunda, el siguiente bloque muestra status y body del error esperado; no inserta datos:
+
+```powershell
+try {
+    Invoke-RestMethod 'http://127.0.0.1:8080/api/mocks/dataset?qty=-1' -ErrorAction Stop
+}
+catch {
+    if ($null -eq $_.Exception.Response) { throw }
+    [int]$_.Exception.Response.StatusCode
+    $_.ErrorDetails.Message
+}
+```
+
+Esperado: 400 y JSON con INVALID_MOCK_AMOUNT. Repetir cambiando la URL por /api/users/not-an-id (400 INVALID_ID), /ruta-inexistente (404 ROUTE_NOT_FOUND). En caso de fallo de conexión, arrancar el servidor antes de continuar; no confundirlo con una respuesta HTTP de error.
+
+### Pruebas y evidencia
+
+npm test ejecuta validaciones y contrato HTTP, inyectando fallas de repositorios para verificar POST seed → Controller → middleware. Las rutas usadas para errores inesperados existen solo dentro de tests, no en la API. Los mensajes API_ERROR durante esos casos son esperados si termina con todas las pruebas aprobadas.
+
+npm run test:integration mantiene la conexión compartida corregida en M2. Amplía las comprobaciones reales de duplicado y recursos ausentes con códigos específicos; requiere NODE_ENV=test y una base descartable con sufijo _test como se documenta arriba. Mostrar resultado de ambas suites, respuesta manual inválida, catálogo y propagación desde Service hasta middleware.
+
+Las pruebas adelantadas, Object.freeze y la retención de causas son decisiones de calidad que apoyan la consigna; no se presentan como nuevos requisitos académicos. No se agregan jerarquías de veinte clases, contenedores de dependencias ni endpoints de diagnóstico públicos.

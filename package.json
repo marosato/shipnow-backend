@@ -1,9 +1,9 @@
 {
   "name": "shipnow-backend",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
-  "description": "Backend III - Módulos 1 y 2",
+  "description": "Backend III - Módulos 1 a 3",
   "engines": {
     "node": ">=24 <25"
   },

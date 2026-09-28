@@ -92,7 +92,10 @@ describe('M2: orquestación y compensación de fallos', () => {
     const { service, calls, batches } = setup('orders', true);
     let error;
     try { await service.seed({ qty: 1 }); } catch (caught) { error = caught; }
-    expect(error?.message).to.include('Requiere revisión').and.include(batches[0]);
+    expect(error?.message).to.include('Requiere revisión');
+    expect(error.context.batchId).to.equal(batches[0]);
+    expect(error.code).to.equal('MOCK_CLEANUP_FAILED');
+    expect(error.cause.errors).to.have.length(2);
     expect(calls).to.deep.equal(['insert:users', 'insert:orders', 'delete:deliveries']);
   });
 });

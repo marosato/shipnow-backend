@@ -16,7 +16,7 @@ async function start() {
   }
   const app = createApp(config);
   const server = app.listen(config.port, '127.0.0.1', () => {
-    console.info(`ShipNow M2 disponible en http://127.0.0.1:${config.port}`);
+    console.info(`ShipNow M3 disponible en http://127.0.0.1:${config.port}`);
   });
   server.on('error', async () => {
     console.error('No se pudo abrir el puerto HTTP configurado.');

@@ -26,6 +26,7 @@ describe('Flujos HTTP con MongoDB real y descartable', () => {
     const duplicate = await request(app).post('/api/users').send({ name: 'Ana', email });
     expect(duplicate.status).to.equal(409);
     expect(duplicate.body.status).to.equal('error');
+    expect(duplicate.body.error).to.equal('DUPLICATE_RESOURCE');
   });
   for (const [stock, status] of [[3, PRODUCT_STATUS.AVAILABLE], [0, PRODUCT_STATUS.OUT_OF_STOCK]]) {
     it(`persiste producto con stock ${stock} y estado derivado`, async () => {
@@ -50,6 +51,7 @@ describe('Flujos HTTP con MongoDB real y descartable', () => {
       const response = await request(app).get(`/api/${resource}/000000000000000000000000`);
       expect(response.status).to.equal(404);
       expect(response.body.status).to.equal('error');
+      expect(response.body.error).to.equal(resource === 'users' ? 'USER_NOT_FOUND' : 'PRODUCT_NOT_FOUND');
     });
   }
 });
