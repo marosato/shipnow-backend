@@ -1,0 +1,155 @@
+paths:
+  /api/mocks/dataset:
+    get:
+      tags:
+      - Mocks
+      - Orders
+      - Deliveries
+      operationId: previewDataset
+      summary: Generar lote sin persistir
+      description: Disponible con ENABLE_MOCKS=true fuera de production. Genera qty usuarios, repartidores,
+        pedidos y entregas; 4 × qty documentos. No guarda en MongoDB. IDs y relaciones coherentes dentro
+        del lote.
+      responses:
+        '200':
+          description: Operación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetResponse'
+        '400':
+          description: 'INVALID_QUERY. INVALID_MOCK_AMOUNT. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INVALID_QUERY'
+                - $ref: '#/components/schemas/Error_INVALID_MOCK_AMOUNT'
+              examples:
+                INVALID_QUERY:
+                  $ref: '#/components/examples/INVALID_QUERY'
+                INVALID_MOCK_AMOUNT:
+                  $ref: '#/components/examples/INVALID_MOCK_AMOUNT'
+        '500':
+          description: 'INTERNAL_ERROR. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INTERNAL_ERROR'
+              examples:
+                INTERNAL_ERROR:
+                  $ref: '#/components/examples/INTERNAL_ERROR'
+      parameters:
+      - $ref: '#/components/parameters/Qty'
+  /api/mocks/users:
+    get:
+      tags:
+      - Mocks
+      operationId: previewUsers
+      summary: Generar usuarios sin persistir
+      description: Disponible con ENABLE_MOCKS=true fuera de production. Devuelve un array de qty usuarios
+        con role=user, sin timestamps.
+      responses:
+        '200':
+          description: Operación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MockUsersResponse'
+        '400':
+          description: 'INVALID_QUERY. INVALID_MOCK_AMOUNT. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INVALID_QUERY'
+                - $ref: '#/components/schemas/Error_INVALID_MOCK_AMOUNT'
+              examples:
+                INVALID_QUERY:
+                  $ref: '#/components/examples/INVALID_QUERY'
+                INVALID_MOCK_AMOUNT:
+                  $ref: '#/components/examples/INVALID_MOCK_AMOUNT'
+        '500':
+          description: 'INTERNAL_ERROR. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INTERNAL_ERROR'
+              examples:
+                INTERNAL_ERROR:
+                  $ref: '#/components/examples/INTERNAL_ERROR'
+      parameters:
+      - $ref: '#/components/parameters/Qty'
+  /api/mocks/seed:
+    post:
+      tags:
+      - Mocks
+      - Orders
+      - Deliveries
+      operationId: seedDataset
+      summary: Insertar un lote de prueba
+      description: 'MODIFICA MongoDB: inserta qty documentos por entidad (total 4 × qty). ENABLE_MOCKS=true
+        fuera de production. qty va solo en JSON; cualquier query se rechaza. Cada petición agrega un
+        lote nuevo; no es idempotente. Compensación por lote, sin transacción; si falla limpieza requiere
+        revisión mediante logs. Usar base de desarrollo descartable.'
+      responses:
+        '201':
+          description: Operación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeedResponse'
+        '400':
+          description: 'INVALID_BODY. INVALID_MOCK_AMOUNT. INVALID_MOCK_INPUT. INVALID_JSON. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INVALID_BODY'
+                - $ref: '#/components/schemas/Error_INVALID_MOCK_AMOUNT'
+                - $ref: '#/components/schemas/Error_INVALID_MOCK_INPUT'
+                - $ref: '#/components/schemas/Error_INVALID_JSON'
+              examples:
+                INVALID_BODY:
+                  $ref: '#/components/examples/INVALID_BODY'
+                INVALID_MOCK_AMOUNT:
+                  $ref: '#/components/examples/INVALID_MOCK_AMOUNT'
+                INVALID_MOCK_INPUT:
+                  $ref: '#/components/examples/INVALID_MOCK_INPUT'
+                INVALID_JSON:
+                  $ref: '#/components/examples/INVALID_JSON'
+        '413':
+          description: 'PAYLOAD_TOO_LARGE. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_PAYLOAD_TOO_LARGE'
+              examples:
+                PAYLOAD_TOO_LARGE:
+                  $ref: '#/components/examples/PAYLOAD_TOO_LARGE'
+        '500':
+          description: 'MOCK_LOAD_FAILED. MOCK_CLEANUP_FAILED. INTERNAL_ERROR. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_MOCK_LOAD_FAILED'
+                - $ref: '#/components/schemas/Error_MOCK_CLEANUP_FAILED'
+                - $ref: '#/components/schemas/Error_INTERNAL_ERROR'
+              examples:
+                MOCK_LOAD_FAILED:
+                  $ref: '#/components/examples/MOCK_LOAD_FAILED'
+                MOCK_CLEANUP_FAILED:
+                  $ref: '#/components/examples/MOCK_CLEANUP_FAILED'
+                INTERNAL_ERROR:
+                  $ref: '#/components/examples/INTERNAL_ERROR'
+      requestBody:
+        required: true
+        description: JSON; límite de 100 KiB. No se admiten campos adicionales.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MockSeedInput'

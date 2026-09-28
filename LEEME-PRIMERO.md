@@ -1,38 +1,23 @@
-# ShipNow — Módulo 1 actualizado
+# ShipNow — Módulo 5 (versión 0.5.0)
 
-Esta versión contiene Mocha 12.0.1, lockfile corregido y documentación de los resultados obtenidos. No incluye módulos posteriores.
+Paquete completo de los módulos 1–5, preparado desde el commit 578289f.
 
-## Si ya tenés la versión anterior funcionando
+1. Detener el servidor con Ctrl+C.
+2. Extraer el ZIP en una carpeta temporal.
+3. Copiar el CONTENIDO de `shipnow` sobre la carpeta `shipnow` existente; reemplazar los archivos del paquete.
+4. Conservar `.env` y `.git`: no se incluyen. No crear shipnow dentro de shipnow.
+5. Ejecutar `npm ci`, luego `npm test` (85 pruebas esperadas).
+6. Ejecutar integración con la configuración de prueba indicada en README (9 esperadas).
+7. Arrancar el servidor y abrir http://127.0.0.1:8080/api/docs/.
 
-Extraé el ZIP en una carpeta temporal. Copiá el CONTENIDO de la carpeta shipnow sobre tu carpeta shipnow existente y aceptá reemplazar los archivos del paquete. No crees una carpeta shipnow dentro de otra shipnow. El paquete no contiene .env ni .git, por lo que esos archivos/carpetas locales no se reemplazan. Conservá cualquier cambio propio antes de sobrescribir código.
+No ejecutar npm install de paquetes sueltos: npm ci usa el lockfile incluido.
+No reemplazar el .env existente por .env.example.
 
-Desde la carpeta que contiene package.json:
+La documentación muestra Mocks/Logger solo cuando están habilitados. Products y Users tienen rutas propias; Orders/Deliveries se documentan como datos de mocks. Revisar la diferencia con la consigna en docs/MODULO-5.md.
 
-```powershell
-npm ci
-npm run dev
-```
+No se hizo commit ni push de M5 desde este paquete. Para publicar después de verificar Windows, incluir también LEEME-PRIMERO.md y los archivos nuevos de src/docs y tests/helpers.
 
-No vuelvas a copiar .env.example sobre tu .env existente. npm ci sincroniza node_modules con el lockfile actualizado.
 
-## Si empezás en una carpeta nueva
+## Corrección de logs del 28/09/2026
 
-Instalá Node.js 24 y MongoDB Community Server. Abrí PowerShell en la carpeta shipnow extraída:
-
-```powershell
-npm ci
-Copy-Item .env.example .env
-npm run dev
-```
-
-El ejemplo usa MongoDB local en 127.0.0.1:27017. README.md contiene instrucciones completas.
-
-## Qué leer
-
-- README.md: instalación, arquitectura, endpoints y pruebas.
-- docs/MODULO-1.md: los diez apartados del módulo y defensa oral.
-- docs/CODIGO-MODULO-1.md: código completo archivo por archivo.
-- docs/VERIFICACION.md: resultados reales y procedencia de la evidencia.
-- docs/GIT-ENTREGA.md: guardar esta versión y subirla a GitHub.
-
-No se necesita repetir toda la integración solo por actualizar documentación. Volvé a ejecutar las suites si modificás código o dependencias.
+Este paquete corrige closeLogger y su prueba. Si ya instalaste dependencias M5 con npm ci, basta copiar los archivos actualizados y ejecutar npm test. Se mantiene 0.5.0 porque M5 todavía no fue publicado. Esperado: 85 passing. No es necesario volver a instalar dependencias para esta corrección.

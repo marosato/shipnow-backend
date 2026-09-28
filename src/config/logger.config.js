@@ -54,13 +54,20 @@ export function configureLogger(config) {
 }
 
 export function closeLogger(instance = logger) {
-  return new Promise(resolve => {
+  // Winston puede desasociar transports antes de emitir finish.
+  // Conservarlos antes de end evita perder la referencia al archivo pendiente.
+  const fileTransports = instance.transports.filter(t => t instanceof DailyRotateFile);
+  return new Promise((resolve, reject) => {
     instance.once('finish', () => {
-      // Winston termina antes de que el transporte cierre su flujo de archivos.
-      const pending = instance.transports.filter(t => t instanceof DailyRotateFile)
-        .map(transport => new Promise(done => transport.once('finish', done)));
-      instance.close();
-      Promise.all(pending).then(resolve);
+      // finish del logger/transport no garantiza que fs.WriteStream haya terminado.
+      // Esperar el callback del flujo de archivo; end admite callbacks posteriores.
+      const pending = fileTransports.map(transport => new Promise((done, fail) => {
+        transport.logStream.end(error => error ? fail(error) : done());
+      }));
+      Promise.all(pending).then(() => {
+        instance.close();
+        resolve();
+      }, reject);
     });
     instance.end();
   });

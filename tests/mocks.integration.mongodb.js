@@ -1,3 +1,4 @@
+import { expectDocumentedResponse } from './helpers/openapi.js';
 import { expect } from 'chai';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
@@ -19,6 +20,7 @@ describe('M2: mocks con MongoDB real', () => {
   it('la vista previa no persiste sus documentos', async () => {
     const response = await request(app).get('/api/mocks/dataset?qty=2');
     expect(response.status).to.equal(200);
+    await expectDocumentedResponse('/api/mocks/dataset', 'get', response);
     const filter = { mockBatchId: response.body.data.batchId };
     expect(await User.countDocuments(filter)).to.equal(0);
     expect(await Order.countDocuments(filter)).to.equal(0);
@@ -29,6 +31,7 @@ describe('M2: mocks con MongoDB real', () => {
       const response = await request(app).post('/api/mocks/seed').send({ qty: 2 });
       if (response.body.data?.batchId) batches.push(response.body.data.batchId);
       expect(response.status).to.equal(201);
+      await expectDocumentedResponse('/api/mocks/seed', 'post', response);
       expect(response.body.data.inserted.total).to.equal(8);
       const filter = { mockBatchId: response.body.data.batchId };
       expect(await User.countDocuments(filter)).to.equal(4);

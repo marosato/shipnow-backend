@@ -1,0 +1,152 @@
+paths:
+  /api/products:
+    get:
+      tags:
+      - Products
+      operationId: listProducts
+      summary: Listar Products
+      description: Lista ordenada por _id ascendente. data es un array sin total. Solo admite page y limit.
+      responses:
+        '200':
+          description: Operación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductsResponse'
+        '400':
+          description: 'INVALID_QUERY. INVALID_PAGINATION. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INVALID_QUERY'
+                - $ref: '#/components/schemas/Error_INVALID_PAGINATION'
+              examples:
+                INVALID_QUERY:
+                  $ref: '#/components/examples/INVALID_QUERY'
+                INVALID_PAGINATION:
+                  $ref: '#/components/examples/INVALID_PAGINATION'
+        '500':
+          description: 'INTERNAL_ERROR. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INTERNAL_ERROR'
+              examples:
+                INTERNAL_ERROR:
+                  $ref: '#/components/examples/INTERNAL_ERROR'
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Limit'
+    post:
+      tags:
+      - Products
+      operationId: createProduct
+      summary: Crear Product
+      description: status se deriva del stock; no admite status. price y stock deben ser números JSON.
+      responses:
+        '201':
+          description: Operación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          description: 'INVALID_BODY. INVALID_TEXT. INVALID_PRICE. INVALID_STOCK. INVALID_DATA. INVALID_JSON. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INVALID_BODY'
+                - $ref: '#/components/schemas/Error_INVALID_TEXT'
+                - $ref: '#/components/schemas/Error_INVALID_PRICE'
+                - $ref: '#/components/schemas/Error_INVALID_STOCK'
+                - $ref: '#/components/schemas/Error_INVALID_DATA'
+                - $ref: '#/components/schemas/Error_INVALID_JSON'
+              examples:
+                INVALID_BODY:
+                  $ref: '#/components/examples/INVALID_BODY'
+                INVALID_TEXT:
+                  $ref: '#/components/examples/INVALID_TEXT'
+                INVALID_PRICE:
+                  $ref: '#/components/examples/INVALID_PRICE'
+                INVALID_STOCK:
+                  $ref: '#/components/examples/INVALID_STOCK'
+                INVALID_DATA:
+                  $ref: '#/components/examples/INVALID_DATA'
+                INVALID_JSON:
+                  $ref: '#/components/examples/INVALID_JSON'
+        '413':
+          description: 'PAYLOAD_TOO_LARGE. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_PAYLOAD_TOO_LARGE'
+              examples:
+                PAYLOAD_TOO_LARGE:
+                  $ref: '#/components/examples/PAYLOAD_TOO_LARGE'
+        '500':
+          description: 'INTERNAL_ERROR. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INTERNAL_ERROR'
+              examples:
+                INTERNAL_ERROR:
+                  $ref: '#/components/examples/INTERNAL_ERROR'
+      requestBody:
+        required: true
+        description: JSON; límite de 100 KiB. No se admiten campos adicionales.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+  /api/products/{id}:
+    get:
+      tags:
+      - Products
+      operationId: getProduct
+      summary: Consultar Product por ID
+      description: Devuelve el recurso si existe.
+      responses:
+        '200':
+          description: Operación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          description: 'INVALID_ID. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INVALID_ID'
+              examples:
+                INVALID_ID:
+                  $ref: '#/components/examples/INVALID_ID'
+        '404':
+          description: 'PRODUCT_NOT_FOUND. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_PRODUCT_NOT_FOUND'
+              examples:
+                PRODUCT_NOT_FOUND:
+                  $ref: '#/components/examples/PRODUCT_NOT_FOUND'
+        '500':
+          description: 'INTERNAL_ERROR. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INTERNAL_ERROR'
+              examples:
+                INTERNAL_ERROR:
+                  $ref: '#/components/examples/INTERNAL_ERROR'
+      parameters:
+      - $ref: '#/components/parameters/Id'

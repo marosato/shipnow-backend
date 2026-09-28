@@ -1,0 +1,481 @@
+components:
+  schemas:
+    ObjectId:
+      type: string
+      pattern: ^[a-fA-F0-9]{24}$
+      example: 507f1f77bcf86cd799439011
+    SuccessResponse:
+      type: object
+      required:
+      - status
+      - data
+      properties:
+        status:
+          type: string
+          enum:
+          - success
+        data: {}
+    User:
+      type: object
+      required:
+      - _id
+      - name
+      - email
+      - role
+      - createdAt
+      - updatedAt
+      properties:
+        _id:
+          $ref: '#/components/schemas/ObjectId'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+          - admin
+          - user
+          - driver
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    Product:
+      type: object
+      required:
+      - _id
+      - name
+      - price
+      - stock
+      - status
+      - createdAt
+      - updatedAt
+      properties:
+        _id:
+          $ref: '#/components/schemas/ObjectId'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        price:
+          type: number
+          minimum: 0
+        stock:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        status:
+          type: string
+          enum:
+          - available
+          - out_of_stock
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    UserInput:
+      type: object
+      required:
+      - name
+      - email
+      properties:
+        name:
+          type: string
+          description: Texto no vacío luego de trim; máximo 120 caracteres después de normalizar.
+          example: Ana Pérez
+        email:
+          type: string
+          description: Texto; trim, minúsculas y validación de email. Máximo 254 después de trim. Debe
+            ser único.
+          example: ana@example.com
+      additionalProperties: false
+    ProductInput:
+      type: object
+      required:
+      - name
+      - price
+      - stock
+      properties:
+        name:
+          type: string
+          description: Texto no vacío; máximo 120 caracteres después de trim.
+          example: Caja mediana
+        price:
+          type: number
+          minimum: 0
+          example: 1500
+        stock:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          example: 3
+      additionalProperties: false
+    MockUser:
+      type: object
+      required:
+      - _id
+      - name
+      - email
+      - role
+      - mockBatchId
+      properties:
+        _id:
+          $ref: '#/components/schemas/ObjectId'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+          - user
+          - driver
+        mockBatchId:
+          type: string
+          format: uuid
+      additionalProperties: false
+    OrderItem:
+      type: object
+      required:
+      - name
+      - quantity
+      - unitPrice
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        unitPrice:
+          type: number
+          minimum: 0
+      additionalProperties: false
+    Order:
+      type: object
+      required:
+      - _id
+      - userId
+      - address
+      - items
+      - total
+      - status
+      - priority
+      - mockBatchId
+      properties:
+        _id:
+          $ref: '#/components/schemas/ObjectId'
+        userId:
+          $ref: '#/components/schemas/ObjectId'
+        address:
+          type: string
+          maxLength: 250
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          minItems: 1
+        total:
+          type: number
+          minimum: 0
+        status:
+          type: string
+          enum:
+          - pending
+          - assigned
+          - in_transit
+          - delivered
+          - cancelled
+        priority:
+          type: string
+          enum:
+          - low
+          - normal
+          - high
+        mockBatchId:
+          type: string
+          format: uuid
+      additionalProperties: false
+      description: Pedido generado en la vista previa de mocks, sin timestamps. No existe un endpoint
+        propio de pedidos en esta versión.
+    Delivery:
+      type: object
+      required:
+      - _id
+      - orderId
+      - driverId
+      - status
+      - priority
+      - mockBatchId
+      properties:
+        _id:
+          $ref: '#/components/schemas/ObjectId'
+        orderId:
+          $ref: '#/components/schemas/ObjectId'
+        driverId:
+          type: string
+          pattern: ^[a-fA-F0-9]{24}$
+          example: 507f1f77bcf86cd799439011
+          nullable: true
+          description: null para pending/cancelled; ObjectId para los demás estados.
+        status:
+          type: string
+          enum:
+          - pending
+          - assigned
+          - in_transit
+          - delivered
+          - cancelled
+        priority:
+          type: string
+          enum:
+          - low
+          - normal
+          - high
+        mockBatchId:
+          type: string
+          format: uuid
+      additionalProperties: false
+      description: Entrega generada en mocks, sin timestamps. No existe un endpoint propio de entregas
+        en esta versión.
+    MockDataset:
+      type: object
+      required:
+      - batchId
+      - users
+      - drivers
+      - orders
+      - deliveries
+      properties:
+        batchId:
+          type: string
+          format: uuid
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/MockUser'
+        drivers:
+          type: array
+          items:
+            $ref: '#/components/schemas/MockUser'
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        deliveries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Delivery'
+      additionalProperties: false
+    MockSeedInput:
+      type: object
+      required:
+      - qty
+      properties:
+        qty:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 2
+      additionalProperties: false
+    MockSeedResult:
+      type: object
+      required:
+      - batchId
+      - inserted
+      - ids
+      properties:
+        batchId:
+          type: string
+          format: uuid
+        inserted:
+          type: object
+          required:
+          - users
+          - drivers
+          - orders
+          - deliveries
+          - total
+          properties:
+            users:
+              type: integer
+              minimum: 1
+              maximum: 100
+            drivers:
+              type: integer
+              minimum: 1
+              maximum: 100
+            orders:
+              type: integer
+              minimum: 1
+              maximum: 100
+            deliveries:
+              type: integer
+              minimum: 1
+              maximum: 100
+            total:
+              type: integer
+              minimum: 1
+              maximum: 400
+          additionalProperties: false
+        ids:
+          type: object
+          required:
+          - users
+          - drivers
+          - orders
+          - deliveries
+          properties:
+            users:
+              type: array
+              items:
+                $ref: '#/components/schemas/ObjectId'
+            drivers:
+              type: array
+              items:
+                $ref: '#/components/schemas/ObjectId'
+            orders:
+              type: array
+              items:
+                $ref: '#/components/schemas/ObjectId'
+            deliveries:
+              type: array
+              items:
+                $ref: '#/components/schemas/ObjectId'
+          additionalProperties: false
+      additionalProperties: false
+    LoggerResult:
+      type: object
+      required:
+      - message
+      - levels
+      properties:
+        message:
+          type: string
+          enum:
+          - Logs de prueba generados.
+        levels:
+          type: array
+          items:
+            type: string
+            enum:
+            - fatal
+            - error
+            - warning
+            - info
+            - http
+            - debug
+          minItems: 6
+          maxItems: 6
+          uniqueItems: true
+      additionalProperties: false
+    UserResponse:
+      allOf:
+      - $ref: '#/components/schemas/SuccessResponse'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/User'
+    UsersResponse:
+      allOf:
+      - $ref: '#/components/schemas/SuccessResponse'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              $ref: '#/components/schemas/User'
+    ProductResponse:
+      allOf:
+      - $ref: '#/components/schemas/SuccessResponse'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/Product'
+    ProductsResponse:
+      allOf:
+      - $ref: '#/components/schemas/SuccessResponse'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              $ref: '#/components/schemas/Product'
+    DatasetResponse:
+      allOf:
+      - $ref: '#/components/schemas/SuccessResponse'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/MockDataset'
+    MockUsersResponse:
+      allOf:
+      - $ref: '#/components/schemas/SuccessResponse'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              $ref: '#/components/schemas/MockUser'
+    SeedResponse:
+      allOf:
+      - $ref: '#/components/schemas/SuccessResponse'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/MockSeedResult'
+    LoggerResponse:
+      allOf:
+      - $ref: '#/components/schemas/SuccessResponse'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/LoggerResult'
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: Identificador hexadecimal de 24 caracteres.
+      schema:
+        $ref: '#/components/schemas/ObjectId'
+    Page:
+      name: page
+      in: query
+      description: Entero positivo, sin ceros iniciales ni repeticiones.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000000
+        default: 1
+    Limit:
+      name: limit
+      in: query
+      description: Entero positivo, sin ceros iniciales ni repeticiones.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Qty:
+      name: qty
+      in: query
+      description: Cantidad por entidad. Sin ceros iniciales ni repeticiones; no admite otros parámetros.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10

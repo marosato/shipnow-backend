@@ -26,7 +26,7 @@ async function start() {
   }
   const app = createApp(config);
   const server = app.listen(config.port, '127.0.0.1', () => {
-    logger.info('SERVER_STARTED', { port: config.port, address: `ShipNow M4 disponible en http://127.0.0.1:${config.port}` });
+    logger.info('SERVER_STARTED', { port: config.port, address: `ShipNow M5 disponible en http://127.0.0.1:${config.port}` });
   });
   server.on('error', async () => {
     logger.fatal('HTTP_LISTEN_FAILED', { port: config.port });

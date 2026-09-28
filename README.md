@@ -1,4 +1,4 @@
-# ShipNow — Backend III · Módulos 1 a 4
+# ShipNow — Backend III · Módulos 1 a 5
 
 API académica incremental. Fuente del alcance: MATERIAL DE LECTURA - Programación Backend III, preentrega y rúbrica del Módulo 1, páginas impresas 21–23. Backend II no agrega requisitos.
 
@@ -39,6 +39,7 @@ También podés usar `npm start`. El servidor conecta a MongoDB y prepara índic
 | NODE_ENV | Sí | development, test o production |
 | MONGODB_URI | Sí | No vacía; esquema MongoDB; conexión comprobada al arrancar |
 | ENABLE_MOCKS | No | true/false; por defecto false; siempre deshabilitado en production |
+| ENABLE_LOGGER_TEST | No | true/false; por defecto false; siempre deshabilitado en production |
 
 Solo src/config/env.config.js lee process.env. dotenv carga .env sin reemplazar variables del sistema. Para probar variables faltantes, asegurate de no tener un valor exportado en la terminal.
 
@@ -128,7 +129,7 @@ El informe docs/VERIFICACION.md registra qué fue ejecutado. docs/MODULO-1.md co
 
 - API local de aprendizaje, sin autenticación ni control de acceso; no preparada para exposición pública.
 - M3 incorpora el catálogo de errores; M4 integra Winston y archivos rotados.
-- M5 incorporará Swagger; M6 ampliará tests; M7 archivos; M8 Docker y health; M9 auditoría final.
+- M5 incorpora Swagger; M6 ampliará tests; M7 archivos; M8 Docker y health; M9 auditoría final.
 - price usa Number en esta base; no representa una decisión definitiva de precisión monetaria para cálculos futuros.
 - Validación simple de email: no verifica existencia ni propiedad del correo.
 
@@ -317,10 +318,47 @@ Opcionalmente agregar ENABLE_LOGGER_TEST=true al .env existente para no exportar
 
 ### Pruebas y evidencia
 
-npm test: esperado 77 passing. Incluye 8 pruebas nuevas de filtros por entorno, escritura de archivos reales temporales, rotación/retención, endpoint, errores HTTP y omisión de datos sensibles. No escribe en logs/ del proyecto durante esta suite. npm run test:integration: esperado 9 passing sobre la base descartable, pendiente de confirmar para esta versión en Windows.
+Evidencia histórica M4: 77 passing, y 9 de integración confirmadas en Windows. La versión M5 espera 85 passing. M4 incorporó 8 pruebas nuevas de filtros por entorno, escritura de archivos reales temporales, rotación/retención, endpoint, errores HTTP y omisión de datos sensibles. No escribe en logs/ del proyecto durante esta suite. npm run test:integration: esperado 9 passing sobre la base descartable, confirmadas para M4; volver a ejecutar para M5 por las nuevas comprobaciones de contrato.
 
 Evidencia de entrega: ambas suites; GET /loggerTest; consola con los seis niveles; archivo con error/fatal; git check-ignore para confirmar exclusión. No forzar cientos de peticiones manuales para rotar: la suite ya comprueba el transporte con umbral reducido. El tamaño/retención y política de datos son decisiones documentadas; no se incorporan plataformas externas ni métricas distribuidas.
 
 Referencias técnicas externas (no agregan requisitos):
 - https://github.com/winstonjs/winston — niveles, transports y cierre.
 - https://github.com/winstonjs/winston-daily-rotate-file — rotación, retención e inventario.
+
+
+## Módulo 5 — Swagger/OpenAPI
+
+Fuente: material Backend III, páginas 101–105 y 118–120. Versión actual: **0.5.0**.
+
+- UI interactiva: http://127.0.0.1:8080/api/docs/
+- JSON OpenAPI: http://127.0.0.1:8080/api/docs/openapi.json
+- Cambiar el puerto en la URL si PORT no es 8080. Try it out usa el servidor actual por defecto.
+- Configuración: src/docs/swagger.config.js. Operaciones y schemas en YAML separados por módulo.
+- Paquetes: swagger-jsdoc y swagger-ui-express, versiones exactas en package.json/lockfile.
+
+### Alcance real y diferencia con la consigna
+
+Se documentan las seis operaciones de Users/Products y, cuando se habilitan, tres de Mocks y una de Logger: diez operaciones en total. Todas especifican respuestas y errores; las que los usan también incluyen parámetros y cuerpos JSON. Los errores y ejemplos reutilizan el catálogo M3.
+
+La consigna enumera Users, Orders, Deliveries, Mocks y Logger. Agregamos Products porque existe. **Orders y Deliveries todavía no tienen endpoints propios:** sus schemas se usan en dataset/seed, etiquetados con esos módulos. No se inventan rutas ni errores de estado. Si el docente exige endpoints independientes de pedidos y entregas, esta diferencia requiere ampliar el negocio antes de la entrega final; no se presenta como resuelta solo por agregar tags.
+
+No hay autenticación. No se documentan JWT, passwords ni 401/403 ficticios. Usuarios persistidos tienen timestamps; vistas previas de mocks no. POST users no recibe role; POST products no recibe status. Los listados devuelven data como array, sin total.
+
+### Disponibilidad y prueba interactiva
+
+Mantener el .env existente; instalar nuevas dependencias con npm ci. Para ver los diez endpoints, usar NODE_ENV=development, ENABLE_MOCKS=true y ENABLE_LOGGER_TEST=true al arrancar. La aplicación escucha en 127.0.0.1 y necesita MongoDB para su arranque habitual.
+
+Abrir Swagger, expandir GET /api/mocks/dataset, pulsar Try it out, ingresar qty=2 y Execute. Esperar HTTP 200 con dos elementos en cada array. Con qty=-1 esperar 400 INVALID_MOCK_AMOUNT. Ninguna de esas dos consultas persiste documentos. POST /api/mocks/seed sí inserta 4 × qty documentos por lote y no es idempotente; usar una base de desarrollo descartable.
+
+Mocks y Logger apagados no aparecen como operaciones en la especificación; sus rutas responden 404 ROUTE_NOT_FOUND. En production, la configuración los deshabilita incluso si se solicitan. La UI y el JSON permanecen disponibles; no constituyen una capa de autorización.
+
+### Pruebas M5
+
+npm test: **85 passing esperadas**. Además de las 77 anteriores, valida OpenAPI/referencias, assets de Swagger, flags, aislamiento de instancias, carga desde otro directorio, ejemplos M3 y respuestas reales sin MongoDB. closeLogger conserva los transportes antes de finalizar Winston y espera el callback del flujo de archivo. La prueba exige archivo completo inmediatamente después del cierre, sin sondeo temporal.
+
+npm run test:integration: **9 passing esperadas**. Los flujos anteriores ahora comparan también las respuestas de creación, consulta, listado, duplicados, inexistentes, preview y seed con OpenAPI. Usar las variables de prueba documentadas arriba y base con sufijo _test. Estas comprobaciones requieren nueva evidencia de Windows.
+
+La validación OpenAPI ayuda a detectar referencias o contratos incorrectos, pero no garantiza que cualquier cambio futuro quede documentado automáticamente. Al modificar una ruta se debe actualizar su YAML y sus pruebas.
+
+Detalle y defensa: docs/MODULO-5.md. Código: docs/CODIGO-MODULO-5.md.

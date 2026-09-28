@@ -1,0 +1,159 @@
+paths:
+  /api/users:
+    get:
+      tags:
+      - Users
+      operationId: listUsers
+      summary: Listar Users
+      description: Lista ordenada por _id ascendente. data es un array sin total. Solo admite page y limit.
+      responses:
+        '200':
+          description: Operación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsersResponse'
+        '400':
+          description: 'INVALID_QUERY. INVALID_PAGINATION. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INVALID_QUERY'
+                - $ref: '#/components/schemas/Error_INVALID_PAGINATION'
+              examples:
+                INVALID_QUERY:
+                  $ref: '#/components/examples/INVALID_QUERY'
+                INVALID_PAGINATION:
+                  $ref: '#/components/examples/INVALID_PAGINATION'
+        '500':
+          description: 'INTERNAL_ERROR. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INTERNAL_ERROR'
+              examples:
+                INTERNAL_ERROR:
+                  $ref: '#/components/examples/INTERNAL_ERROR'
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Limit'
+    post:
+      tags:
+      - Users
+      operationId: createUser
+      summary: Crear User
+      description: Se asigna role=user; no admite role.
+      responses:
+        '201':
+          description: Operación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: 'INVALID_BODY. INVALID_TEXT. INVALID_EMAIL. INVALID_DATA. INVALID_JSON. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INVALID_BODY'
+                - $ref: '#/components/schemas/Error_INVALID_TEXT'
+                - $ref: '#/components/schemas/Error_INVALID_EMAIL'
+                - $ref: '#/components/schemas/Error_INVALID_DATA'
+                - $ref: '#/components/schemas/Error_INVALID_JSON'
+              examples:
+                INVALID_BODY:
+                  $ref: '#/components/examples/INVALID_BODY'
+                INVALID_TEXT:
+                  $ref: '#/components/examples/INVALID_TEXT'
+                INVALID_EMAIL:
+                  $ref: '#/components/examples/INVALID_EMAIL'
+                INVALID_DATA:
+                  $ref: '#/components/examples/INVALID_DATA'
+                INVALID_JSON:
+                  $ref: '#/components/examples/INVALID_JSON'
+        '409':
+          description: 'DUPLICATE_RESOURCE. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_DUPLICATE_RESOURCE'
+              examples:
+                DUPLICATE_RESOURCE:
+                  $ref: '#/components/examples/DUPLICATE_RESOURCE'
+        '413':
+          description: 'PAYLOAD_TOO_LARGE. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_PAYLOAD_TOO_LARGE'
+              examples:
+                PAYLOAD_TOO_LARGE:
+                  $ref: '#/components/examples/PAYLOAD_TOO_LARGE'
+        '500':
+          description: 'INTERNAL_ERROR. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INTERNAL_ERROR'
+              examples:
+                INTERNAL_ERROR:
+                  $ref: '#/components/examples/INTERNAL_ERROR'
+      requestBody:
+        required: true
+        description: JSON; límite de 100 KiB. No se admiten campos adicionales.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+  /api/users/{id}:
+    get:
+      tags:
+      - Users
+      operationId: getUser
+      summary: Consultar User por ID
+      description: Devuelve el recurso si existe.
+      responses:
+        '200':
+          description: Operación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: 'INVALID_ID. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INVALID_ID'
+              examples:
+                INVALID_ID:
+                  $ref: '#/components/examples/INVALID_ID'
+        '404':
+          description: 'USER_NOT_FOUND. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_USER_NOT_FOUND'
+              examples:
+                USER_NOT_FOUND:
+                  $ref: '#/components/examples/USER_NOT_FOUND'
+        '500':
+          description: 'INTERNAL_ERROR. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INTERNAL_ERROR'
+              examples:
+                INTERNAL_ERROR:
+                  $ref: '#/components/examples/INTERNAL_ERROR'
+      parameters:
+      - $ref: '#/components/parameters/Id'

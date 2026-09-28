@@ -1,0 +1,27 @@
+paths:
+  /loggerTest:
+    get:
+      tags:
+      - Logger
+      operationId: testLogger
+      summary: Emitir seis niveles de prueba
+      description: 'Herramienta local de validación, no operación de negocio. ENABLE_LOGGER_TEST=true
+        fuera de production. Emite eventos simulated=true; fatal no detiene el servidor. Consola development:
+        seis niveles. Archivo: error/fatal; escritura asíncrona.'
+      responses:
+        '200':
+          description: Operación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoggerResponse'
+        '500':
+          description: 'INTERNAL_ERROR. '
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/Error_INTERNAL_ERROR'
+              examples:
+                INTERNAL_ERROR:
+                  $ref: '#/components/examples/INTERNAL_ERROR'

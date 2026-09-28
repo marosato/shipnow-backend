@@ -31,8 +31,11 @@ describe('M4: Winston y persistencia real en archivos temporales', () => {
       await closeLogger(log);
       expect(lines.map(x => x.level)).to.deep.equal(nodeEnv === 'development'
         ? ['fatal', 'error', 'warning', 'info', 'http', 'debug'] : ['fatal', 'error', 'warning', 'info']);
-      const filename = (await readdir(directory)).find(name => /^error-.*\.log$/.test(name));
-      const records = (await readFile(join(directory, filename), 'utf8')).trim().split('\n').map(JSON.parse);
+      const filenames = (await readdir(directory)).filter(name => /^error-.*\.log$/.test(name));
+      // Al resolverse closeLogger el archivo ya debe existir y estar completo.
+      expect(filenames, 'closeLogger debe esperar la escritura del archivo').to.have.length(1);
+      const records = (await readFile(join(directory, filenames[0]), 'utf8'))
+        .trim().split('\n').map(JSON.parse);
       expect(records.map(x => x.level)).to.deep.equal(['fatal', 'error']);
       for (const record of records) {
         expect(Number.isNaN(Date.parse(record.timestamp))).to.equal(false);

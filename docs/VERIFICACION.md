@@ -101,3 +101,39 @@ Base: commit 7983ac0. Consigna y rúbrica cotejadas con Backend III, pp. 90–95
 - HTTP_REQUEST: método, ruta, estado y duración registrados.
 - Archivo: eventos LOGGER_TEST de niveles fatal y error, simulated true.
 - Rotación, retención y filtros por entorno verificados por la suite automatizada.
+
+
+## M5 — Preparación del 28/09/2026
+
+- Base clonada desde GitHub: 578289f (M4 completo y publicado).
+- Versión preparada: 0.5.0.
+- npm test: 85 passing en Linux/Node 24, incluyendo OpenAPI, UI/assets y contratos HTTP.
+- npm audit: 0 vulnerabilidades reportadas durante la preparación.
+- git diff --check: sin errores de espacios.
+- Ajuste de la prueba M4: espera acotada de visibilidad del archivo antes de parsear JSON; se observó una lectura vacía prematura.
+- Integración M5 con MongoDB: PENDIENTE en Windows; 9 esperadas, con comprobaciones nuevas de schemas. MongoDB no está instalado aquí.
+- Navegación manual en Swagger: PENDIENTE en Windows; se verificaron HTTP de UI, assets y JSON mediante Supertest.
+- Publicación M5: PENDIENTE; no se realizó commit ni push.
+- Alcance: Orders/Deliveries solo mediante mocks y schemas, sin endpoints propios. Ver diferencia con la consigna en MODULO-5.md.
+
+
+### Corrección del cierre del logger — 28/09/2026
+
+- Evidencia Windows de M5 inicial: 84 passing / 1 failing. join recibió undefined porque el archivo aún no estaba disponible.
+- La espera temporal anterior no incluía aparición del archivo y no resolvía el cierre prematuro.
+- closeLogger ahora captura transportes antes de end y espera el callback de finalización del flujo de archivo, en lugar de depender de finish del transporte.
+- La prueba requiere un archivo con fatal/error inmediatamente después de await closeLogger, sin esperas añadidas.
+- Linux después de corregir: 85 passing; 40 cierres inmediatos adicionales con escritura completa, alternando development/production.
+- El ensayo de 40 cierres con el código anterior tampoco reprodujo el fallo en Linux: no se presenta como reproducción determinista del error de Windows.
+- Pendiente: confirmar la corrección en Windows. La integración M5 y publicación siguen pendientes.
+- Dependencias y versión 0.5.0 sin cambios; no requiere reinstalar paquetes si npm ci ya terminó correctamente.
+
+### Validación M5 en Windows — 28/09/2026
+- Versión: 0.5.0, con corrección del cierre del logger.
+- npm test: 85 passing.
+- npm run test:integration: 9 passing.
+- Swagger UI accesible y operación ejecutada desde el navegador.
+- GET /api/mocks/dataset?qty=2: HTTP 200; dos usuarios, repartidores, pedidos y entregas.
+- Swagger rechaza qty=-1 antes de enviar la petición por minimum: 1.
+- Petición directa con qty=-1: HTTP 400 INVALID_MOCK_AMOUNT.
+- Orders y Deliveries se documentan mediante schemas y mocks; siguen sin endpoints propios.
