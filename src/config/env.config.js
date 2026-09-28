@@ -20,7 +20,12 @@ export function validateEnv(source) {
   if (!/^mongodb(?:\+srv)?:\/\/[^\s]+$/.test(mongodbUri)) {
     throw new Error('Configuración inválida: MONGODB_URI debe ser una URI MongoDB.');
   }
-  return Object.freeze({ port, nodeEnv, mongodbUri });
+  const flag = source.ENABLE_MOCKS ?? 'false';
+  if (!['true', 'false'].includes(flag)) {
+    throw new Error('Configuración inválida: ENABLE_MOCKS debe ser true o false.');
+  }
+  return Object.freeze({ port, nodeEnv, mongodbUri,
+    mocksEnabled: flag === 'true' && nodeEnv !== 'production' });
 }
 
 export function loadConfig() {

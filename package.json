@@ -1,9 +1,9 @@
 {
   "name": "shipnow-backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Backend III - Módulo 1",
+  "description": "Backend III - Módulos 1 y 2",
   "engines": {
     "node": ">=24 <25"
   },
@@ -11,9 +11,10 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "mocha --timeout 10000 \"tests/**/*.test.js\"",
-    "test:integration": "mocha --timeout 15000 tests/integration.mongodb.js"
+    "test:integration": "mocha --no-parallel --require ./tests/integration.setup.js --timeout 15000 \"tests/*mongodb.js\""
   },
   "dependencies": {
+    "@faker-js/faker": "10.6.0",
     "dotenv": "17.4.2",
     "express": "5.2.1",
     "mongoose": "9.10.1"

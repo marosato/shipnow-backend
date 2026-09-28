@@ -19,3 +19,12 @@ export async function create(data) {
 export async function initialize() {
   await User.init();
 }
+
+export function insertMany(documents) {
+  return User.insertMany(documents, { ordered: true });
+}
+
+export function deleteMockBatch(batchId) {
+  // Solo datos identificados con el UUID de este lote; nunca borra una colección.
+  return User.deleteMany({ mockBatchId: batchId }).exec();
+}

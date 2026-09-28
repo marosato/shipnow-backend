@@ -2,8 +2,6 @@ import { expect } from 'chai';
 import request from 'supertest';
 import { randomUUID } from 'node:crypto';
 import app from '../src/app.js';
-import { loadConfig } from '../src/config/env.config.js';
-import { connectDatabase, disconnectDatabase } from '../src/config/db.config.js';
 import User from '../src/models/user.model.js';
 import Product from '../src/models/product.model.js';
 import { USER_ROLES, PRODUCT_STATUS } from '../src/constants/index.js';
@@ -12,20 +10,9 @@ import { USER_ROLES, PRODUCT_STATUS } from '../src/constants/index.js';
 const users = [];
 const products = [];
 describe('Flujos HTTP con MongoDB real y descartable', () => {
-  before(async () => {
-    const config = loadConfig();
-    const database = new URL(config.mongodbUri).pathname.slice(1);
-    if (config.nodeEnv !== 'test' || !database.endsWith('_test')) {
-      throw new Error('Se requiere NODE_ENV=test y una base terminada en _test.');
-    }
-    await connectDatabase(config.mongodbUri);
-    await Promise.all([User.init(), Product.init()]);
-  });
   after(async () => {
-    try {
-      if (users.length) await User.deleteMany({ _id: { $in: users } });
-      if (products.length) await Product.deleteMany({ _id: { $in: products } });
-    } finally { await disconnectDatabase(); }
+    if (users.length) await User.deleteMany({ _id: { $in: users } });
+    if (products.length) await Product.deleteMany({ _id: { $in: products } });
   });
   it('crea usuario, normaliza email, consulta y rechaza duplicado', async () => {
     const email = `${randomUUID()}@EXAMPLE.COM`;

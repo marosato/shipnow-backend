@@ -1,14 +1,14 @@
-# ShipNow — Backend III · Módulo 1
+# ShipNow — Backend III · Módulos 1 y 2
 
 API académica incremental. Fuente del alcance: MATERIAL DE LECTURA - Programación Backend III, preentrega y rúbrica del Módulo 1, páginas impresas 21–23. Backend II no agrega requisitos.
 
 ## Alcance y decisiones
 
-El material exige Users y Products por capas, configuración validada y constantes. No fija en esa preentrega todos los campos ni un CRUD completo. Esta primera implementación define crear, listar y consultar por ID para ambas entidades. Actualizar/eliminar, pedidos y entregas se incorporarán al abordar sus consignas. No es todavía la entrega final.
+El material exige Users y Products por capas, configuración validada y constantes. No fija en esa preentrega todos los campos ni un CRUD completo. Esta primera implementación define crear, listar y consultar por ID para ambas entidades. M2 incorpora modelos de pedidos y entregas para mocks; sus operaciones de negocio completas todavía no se implementan. No es todavía la entrega final.
 
 Decisiones propias: User tiene name/email/role; Product tiene name/price/stock/status. El Service deriva status a partir del stock y asigna USER en altas de usuarios. No se implementa login, passwords ni administración de roles; el rol es un dato de dominio, no una autorización. Los endpoints son para desarrollo local y el servidor escucha en 127.0.0.1. Cambiaremos explícitamente la configuración de red al dockerizar en M8.
 
-Roles: admin, user. Estados: available, out_of_stock. Las claves ADMIN, USER, AVAILABLE y OUT_OF_STOCK se consumen desde constantes congeladas. El PDF mezcla nomenclaturas; esta decisión sigue los ejemplos de la preentrega M1.
+Roles: admin, user, driver. Estados: available, out_of_stock. Las claves ADMIN, USER, AVAILABLE y OUT_OF_STOCK se consumen desde constantes congeladas. El PDF mezcla nomenclaturas; esta decisión sigue los ejemplos de la preentrega M1.
 
 ## Herramientas e instalación (Windows PowerShell)
 
@@ -20,7 +20,7 @@ Desde la carpeta que contiene package.json:
 node --version
 npm --version
 npm ci
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
 Editá .env con tu conexión. El ejemplo incluye valores locales no sensibles, nunca credenciales reales. MongoDB debe estar activo; si usás Atlas necesitás usuario, permisos y acceso de red configurados.
@@ -38,6 +38,7 @@ También podés usar `npm start`. El servidor conecta a MongoDB y prepara índic
 | PORT | Sí | Entero entre 1 y 65535 |
 | NODE_ENV | Sí | development, test o production |
 | MONGODB_URI | Sí | No vacía; esquema MongoDB; conexión comprobada al arrancar |
+| ENABLE_MOCKS | No | true/false; por defecto false; siempre deshabilitado en production |
 
 Solo src/config/env.config.js lee process.env. dotenv carga .env sin reemplazar variables del sistema. Para probar variables faltantes, asegurate de no tener un valor exportado en la terminal.
 
@@ -136,3 +137,41 @@ El informe docs/VERIFICACION.md registra qué fue ejecutado. docs/MODULO-1.md co
 No agregan requisitos a la consigna:
 - https://expressjs.com/en/5x/guide/error-handling/ — propagación de errores; se usa next explícito para mantener visible el flujo.
 - https://mongoosejs.com/docs/validation.html — unique define índice, no un validador; se espera init antes de aceptar altas.
+
+## Módulo 2 — Mocks y carga controlada
+
+Fuente del alcance: consigna y rúbrica de M2 del material Backend III (páginas impresas 43–45). Obligatorio: datos ficticios de usuarios, repartidores, pedidos y entregas; relaciones válidas; generación sin persistir y carga en MongoDB; router /api/mocks; capas y constantes; documentación y repositorio limpio. Backend II es apoyo conceptual.
+
+Decisiones propias: Faker; repartidores como usuarios con rol driver; un cliente, un repartidor, un pedido y una entrega por unidad de qty. Los artículos del pedido son snapshots de nombre/cantidad/precio, sin agregar un requisito de relación con Products. Estados pending, assigned, in_transit, delivered, cancelled y prioridades low, normal, high son la convención de esta implementación, no una transcripción literal de enums obligatorios del PDF. Pending/cancelled no llevan repartidor; los otros estados sí. Estado y prioridad coinciden entre pedido y entrega. Total = suma de cantidad × precio unitario. No se simula un motor de transiciones ni pagos.
+
+Recomendaciones incorporadas: máximo 100 por tipo, habilitación explícita fuera de producción, identificador por lote y compensación de inserciones fallidas. No se agregan microservicios, colas ni un framework de repositorios genéricos.
+
+En tu .env existente agregá `ENABLE_MOCKS=true` y usá `NODE_ENV=development`. Reiniciá el servidor después de cambiar .env. No reemplaces tu conexión existente. La bandera no es autenticación; el servidor sigue limitado a localhost.
+
+| Método | Ruta | Contrato |
+|---|---|---|
+| GET | /api/mocks/users?qty=2 | 200; array de clientes ficticios; no escribe |
+| GET | /api/mocks/dataset?qty=2 | 200; batchId, users, drivers, orders, deliveries; no escribe |
+| POST | /api/mocks/seed | JSON {"qty":2}; 201; batchId, inserted e ids; escribe 8 documentos |
+
+GET admite qty entero positivo de 1 a 100, por defecto 10. POST requiere qty numérico en JSON, sin parámetros query. Es una elección de contrato; el ejemplo de query del material no se presenta como obligación. Cada POST crea un lote nuevo. Las llamadas GET y POST generan datos independientes: POST no guarda una vista previa anterior. Con mocks deshabilitados, las rutas devuelven 404.
+
+```powershell
+$preview = Invoke-RestMethod 'http://127.0.0.1:8080/api/mocks/dataset?qty=2'
+$preview | ConvertTo-Json -Depth 8
+$seed = Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:8080/api/mocks/seed' -ContentType 'application/json' -Body '{"qty":2}'
+$seed | ConvertTo-Json -Depth 6
+Invoke-RestMethod "http://127.0.0.1:8080/api/users/$($seed.data.ids.users[0])"
+```
+
+En MongoDB Compass, filtrar users, orders y deliveries por `mockBatchId` devuelto por POST: deben existir 4 usuarios (2 clientes y 2 repartidores), 2 pedidos y 2 entregas. El lote de GET no debe existir. No hay rutas GET de negocio para pedidos/entregas todavía.
+
+El Service inserta usuarios antes de pedidos y entregas. Si una escritura falla, elimina exclusivamente el lote generado, en orden entregas → pedidos → usuarios. Si falla esa limpieza, conserva los padres e informa el lote para revisión. Esto NO es una transacción atómica: una caída del proceso puede dejar un lote parcial. No se exige configurar un replica set para esta etapa. Las pruebas de fallo usan repositorios simulados; no acreditan tolerancia a caídas de MongoDB.
+
+`npm test` incluye M1 y M2 sin base. `npm run test:integration` incluye ambas suites reales y requiere la configuración descartable indicada arriba; no necesita mantener npm run dev activo. La suite de M2 comprueba que GET no persiste y que dos POST crean lotes independientes con referencias válidas. Limpia por lotes propios, sin dropDatabase. Si se interrumpe, revisar la base de pruebas.
+
+Ver docs/MODULO-2.md para aceptación y defensa; docs/CODIGO-MODULO-2.md para el código de esta ampliación. La implementación no equivale al cierre académico: primero debe pasar la integración en tu equipo.
+
+### Ciclo de conexión de las pruebas reales
+
+El script test:integration carga tests/integration.setup.js mediante --require. Este hook raíz abre una conexión para ambas suites, espera los cuatro modelos y cierra al terminar. Las suites limpian solo sus datos. Ejecutarlas con el script npm; no omitir el setup ni activar ejecución paralela.
