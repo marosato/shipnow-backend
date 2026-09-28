@@ -79,3 +79,25 @@ Base: commit b22747c publicado por la estudiante. Consigna contrastada con el PD
 - GET /ruta-inexistente: 404 ROUTE_NOT_FOUND.
 - Las tres respuestas manuales incluyen status, error y message.
 La integración y la comprobación manual de M3 quedan verificadas.
+
+## M4 — Preparación del 28/09/2026
+
+Base: commit 7983ac0. Consigna y rúbrica cotejadas con Backend III, pp. 90–95.
+
+- npm test: 77 passing (69 previas + 8 de logging).
+- Archivos temporales reales: niveles, timestamps, rotación y retención verificados. No es prueba de carga extrema.
+- Endpoint: seis niveles; producción deshabilitada; HTTP sin datos sensibles; respuesta de M3 conservada.
+- Arranque real con PORT inválido: salida 1; STARTUP_FAILED nivel fatal persistido.
+- npm audit: 0 vulnerabilidades reportadas en esta ejecución, sin garantía permanente.
+- Integración real M4: PENDIENTE en Windows (9 esperadas). MongoDB no está instalado en el entorno de preparación.
+- Publicación M4: PENDIENTE; no se realizó push desde este paquete.
+
+### Validación M4 en Windows — 28/09/2026
+- Versión: 0.4.0.
+- npm test: 77 passing.
+- npm run test:integration: 9 passing.
+- GET /loggerTest: HTTP 200, status success.
+- Consola development: fatal, error, warning, info, http y debug.
+- HTTP_REQUEST: método, ruta, estado y duración registrados.
+- Archivo: eventos LOGGER_TEST de niveles fatal y error, simulated true.
+- Rotación, retención y filtros por entorno verificados por la suite automatizada.

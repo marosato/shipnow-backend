@@ -1,3 +1,4 @@
+import { logger } from '../config/logger.config.js';
 import { ERRORS } from '../errors/error-catalog.js';
 import * as repository from '../repositories/product.repository.js';
 import { PRODUCT_STATUS } from '../constants/index.js';
@@ -15,7 +16,7 @@ export async function getById(id) {
   return product;
 }
 
-export function create(body) {
+export async function create(body) {
   validateBody(body, ['name', 'price', 'stock']);
   const name = requiredText(body.name, 'name', 120);
   if (typeof body.price !== 'number' || !Number.isFinite(body.price) || body.price < 0) {
@@ -26,5 +27,7 @@ export function create(body) {
   }
   // Decisión de negocio: el cliente no puede imponer un estado incompatible con el stock.
   const status = body.stock > 0 ? PRODUCT_STATUS.AVAILABLE : PRODUCT_STATUS.OUT_OF_STOCK;
-  return repository.create({ name, price: body.price, stock: body.stock, status });
+  const created = await repository.create({ name, price: body.price, stock: body.stock, status });
+  logger.info('PRODUCT_CREATED', { id: String(created._id) });
+  return created;
 }

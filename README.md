@@ -1,4 +1,4 @@
-# ShipNow — Backend III · Módulos 1 a 3
+# ShipNow — Backend III · Módulos 1 a 4
 
 API académica incremental. Fuente del alcance: MATERIAL DE LECTURA - Programación Backend III, preentrega y rúbrica del Módulo 1, páginas impresas 21–23. Backend II no agrega requisitos.
 
@@ -127,7 +127,7 @@ El informe docs/VERIFICACION.md registra qué fue ejecutado. docs/MODULO-1.md co
 ## Límites conocidos y siguientes módulos
 
 - API local de aprendizaje, sin autenticación ni control de acceso; no preparada para exposición pública.
-- M3 incorpora el catálogo de errores; M4 sustituirá consola por Winston.
+- M3 incorpora el catálogo de errores; M4 integra Winston y archivos rotados.
 - M5 incorporará Swagger; M6 ampliará tests; M7 archivos; M8 Docker y health; M9 auditoría final.
 - price usa Number en esta base; no representa una decisión definitiva de precisión monetaria para cálculos futuros.
 - Validación simple de email: no verifica existencia ni propiedad del correo.
@@ -215,7 +215,7 @@ El campo error identifica el caso, el status HTTP indica su categoría y message
 
 El catálogo incluye también validación de texto, body, consulta, paginación, email, precio, stock y datos de Mongoose. No se agregan códigos ficticios para operaciones de pedidos aún no implementadas: cuando existan, tendrán sus reglas y errores propios. Los estados generados por M2 proceden de constantes; no hay endpoint de actualización de estado que validar todavía.
 
-Conservamos el error original en cause, y ambas causas en AggregateError cuando fallan escritura y limpieza. El registro provisional imprime código y UUID del lote si corresponde, nunca el error crudo. Winston y redacción estructurada se trabajan en M4. La compensación continúa sin ser atómica.
+Conservamos el error original en cause, y ambas causas en AggregateError cuando fallan escritura y limpieza. Desde M4, Winston registra código y UUID del lote si corresponde, nunca el error crudo. La compensación continúa sin ser atómica.
 
 ### Prueba manual en Windows
 
@@ -245,8 +245,82 @@ Esperado: 400 y JSON con INVALID_MOCK_AMOUNT. Repetir cambiando la URL por /api/
 
 ### Pruebas y evidencia
 
-npm test ejecuta validaciones y contrato HTTP, inyectando fallas de repositorios para verificar POST seed → Controller → middleware. Las rutas usadas para errores inesperados existen solo dentro de tests, no en la API. Los mensajes API_ERROR durante esos casos son esperados si termina con todas las pruebas aprobadas.
+npm test ejecuta validaciones y contrato HTTP, inyectando fallas de repositorios para verificar POST seed → Controller → middleware. Las rutas usadas para errores inesperados existen solo dentro de tests, no en la API. Desde M4, el logger está silenciado por defecto al importar la app en tests; la suite de logging lo configura explícitamente para comprobar sus salidas.
 
 npm run test:integration mantiene la conexión compartida corregida en M2. Amplía las comprobaciones reales de duplicado y recursos ausentes con códigos específicos; requiere NODE_ENV=test y una base descartable con sufijo _test como se documenta arriba. Mostrar resultado de ambas suites, respuesta manual inválida, catálogo y propagación desde Service hasta middleware.
 
 Las pruebas adelantadas, Object.freeze y la retención de causas son decisiones de calidad que apoyan la consigna; no se presentan como nuevos requisitos académicos. No se agregan jerarquías de veinte clases, contenedores de dependencias ni endpoints de diagnóstico públicos.
+
+## Módulo 4 — Logging y monitoreo básico
+
+Fuente: Backend III, preentrega y rúbrica, páginas impresas 90–95. Obligatorio: Winston centralizado, seis niveles, distinción de entorno, integración con errores y módulos, persistencia/rotación, endpoint de prueba y README; logs fuera de Git. La rúbrica pondera cinco criterios al 20%: configuración, niveles, integración, archivos/rotación y documentación/endpoint.
+
+### Configuración y niveles
+
+src/config/logger.config.js es la configuración reutilizable. El servidor recibe NODE_ENV desde env.config.js; el logger no lee process.env. No se generan archivos por el solo hecho de importar app en tests. server.js configura el logger antes de conectar con MongoDB.
+
+| Nivel | Uso | Consola development | Consola production | Archivo |
+|---|---|---|---|---|
+| debug | Vista previa de mocks y diagnóstico | Sí | No | No |
+| http | Método, patrón de ruta, estado, duración | Sí | No | No |
+| info | Arranque, conexión, altas y carga de lote | Sí | Sí | No |
+| warning | Errores HTTP esperados, 4xx | Sí | Sí | No |
+| error | Errores de servidor y conexión | Sí | Sí | Sí |
+| fatal | Fallos críticos de arranque; prueba explícita | Sí | Sí | Sí |
+
+Se usan niveles personalizados: fatal=0, error=1, warning=2, info=3, http=4 y debug=5. Un número menor representa mayor severidad en Winston. El formato de consola y archivo es JSON por línea, con timestamp UTC, level, message y metadatos controlados. La respuesta HTTP de M3 no cambia.
+
+Eventos: SERVER_STARTED, MONGODB_CONNECTED, MONGODB_CONNECTION_FAILED, MONGODB_DISCONNECTED, USER_CREATED, PRODUCT_CREATED, MOCK_PREVIEW_CREATED, MOCK_BATCH_INSERTED, API_ERROR, HTTP_REQUEST, SERVER_STOPPED, STARTUP_FAILED y HTTP_LISTEN_FAILED. LOGGER_TEST identifica pruebas y lleva simulated=true: un fatal de prueba no indica caída del servidor.
+
+No se registran cuerpos, headers, contraseñas, correos, query strings, URIs de MongoDB ni mensajes crudos de errores/causas. Se guardan IDs de entidad o lote y códigos controlados. Los patrones de ruta sustituyen valores concretos; las rutas inexistentes se registran como UNMATCHED. Las causas de AppError siguen disponibles internamente; los logs actuales no constituyen un sistema completo de trazas. Las respuestas HTTP ya iniciadas se delegan a Express.
+
+### Archivos y rotación
+
+Winston usa winston-daily-rotate-file: logs/error-YYYY-MM-DD.log, fecha UTC; sufijos adicionales cuando se supera el umbral de 5 MB. Retención configurada: 5 archivos administrados por el transporte. Un registro puede hacer superar el umbral; no es una cuota exacta del sistema de archivos. logs/rotation-audit.json conserva el inventario para la retención: no borrarlo mientras el servidor esté funcionando.
+
+La ruta logs se resuelve desde la ubicación del proyecto, no desde el directorio de la terminal. .gitignore ya excluye logs/ y *.log. Nunca subir archivos generados, incluido el inventario. La prueba de rotación usa archivos pequeños temporales y espera escrituras en disco; no es una prueba de estrés ni garantiza durabilidad ante caída abrupta o disco lleno. La política supone una sola instancia escribiendo en esa carpeta.
+
+El cierre normal espera el logger. Si el transporte informa un fallo, una salida mínima a stderr avisa LOGGER_FAILURE, sin entrar en recursión ni imprimir datos privados. No se promete persistencia cuando el disco no está disponible.
+
+### Endpoint de prueba
+
+GET /loggerTest responde 200 y genera los seis niveles. El router solo conecta método/path/controller; el Controller llama al Service de prueba. No usa Repository porque no realiza operaciones del dominio ni consultas MongoDB. El transporte de Winston se ocupa de los archivos.
+
+ENABLE_LOGGER_TEST acepta true/false, por defecto false. En production siempre queda deshabilitado y devuelve 404, incluso si la variable vale true. Es una recomendación de seguridad local, no un requisito adicional de la rúbrica. No equivale a autenticación.
+
+Desde la raíz del proyecto, con MongoDB activo:
+
+```powershell
+$env:NODE_ENV = 'development'
+$env:PORT = '8080'
+$env:ENABLE_LOGGER_TEST = 'true'
+npm run dev
+```
+
+Dejar abierta esa terminal. En otra pestaña:
+
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:8080/loggerTest' -ErrorAction Stop |
+    ConvertTo-Json -Depth 4
+```
+
+En la consola del servidor deben aparecer seis LOGGER_TEST y el registro HTTP. La respuesta confirma que se emitieron eventos al logger; la escritura es asíncrona, por lo que verificar también el archivo. Desde una terminal ubicada en shipnow, luego de completar la petición:
+
+```powershell
+Get-ChildItem .\logs -Filter 'error-*.log*'
+Get-Content .\logs\error-*.log* -Tail 10
+```
+
+Solo deben aparecer niveles error/fatal en esos archivos. Para comprobar una advertencia real, solicitar /api/users/not-an-id: responde 400 INVALID_ID y registra API_ERROR de nivel warning en consola, sin guardarlo en el archivo de errores.
+
+Opcionalmente agregar ENABLE_LOGGER_TEST=true al .env existente para no exportarlo cada vez. No reemplazar la conexión del .env. Reiniciar después de modificar variables. En production no funciona /loggerTest, por diseño.
+
+### Pruebas y evidencia
+
+npm test: esperado 77 passing. Incluye 8 pruebas nuevas de filtros por entorno, escritura de archivos reales temporales, rotación/retención, endpoint, errores HTTP y omisión de datos sensibles. No escribe en logs/ del proyecto durante esta suite. npm run test:integration: esperado 9 passing sobre la base descartable, pendiente de confirmar para esta versión en Windows.
+
+Evidencia de entrega: ambas suites; GET /loggerTest; consola con los seis niveles; archivo con error/fatal; git check-ignore para confirmar exclusión. No forzar cientos de peticiones manuales para rotar: la suite ya comprueba el transporte con umbral reducido. El tamaño/retención y política de datos son decisiones documentadas; no se incorporan plataformas externas ni métricas distribuidas.
+
+Referencias técnicas externas (no agregan requisitos):
+- https://github.com/winstonjs/winston — niveles, transports y cierre.
+- https://github.com/winstonjs/winston-daily-rotate-file — rotación, retención e inventario.

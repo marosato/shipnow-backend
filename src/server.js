@@ -1,3 +1,4 @@
+import { logger, configureLogger, closeLogger } from './config/logger.config.js';
 import { createApp } from './app.js';
 import { initialize as initializeOrders } from './repositories/order.repository.js';
 import { initialize as initializeDeliveries } from './repositories/delivery.repository.js';
@@ -6,21 +7,31 @@ import { connectDatabase, disconnectDatabase } from './config/db.config.js';
 import { initialize as initializeUsers } from './repositories/user.repository.js';
 import { initialize as initializeProducts } from './repositories/product.repository.js';
 
+let startupStage = 'logger';
+
 async function start() {
+  // Permite registrar incluso fallos de validación, sin imprimir valores del entorno.
+  configureLogger({ nodeEnv: 'production' });
+  startupStage = 'configuration';
   const config = loadConfig();
+  configureLogger(config);
+  startupStage = 'database';
   try {
     await connectDatabase(config.mongodbUri);
-    await Promise.all([initializeUsers(), initializeProducts(), initializeOrders(), initializeDeliveries()]);
+    const results = await Promise.allSettled([initializeUsers(), initializeProducts(), initializeOrders(), initializeDeliveries()]);
+    const failure = results.find(result => result.status === 'rejected');
+    if (failure) throw failure.reason;
   } catch {
     throw new Error('No se pudo preparar MongoDB. Verifique conexión, permisos e índices.');
   }
   const app = createApp(config);
   const server = app.listen(config.port, '127.0.0.1', () => {
-    console.info(`ShipNow M3 disponible en http://127.0.0.1:${config.port}`);
+    logger.info('SERVER_STARTED', { port: config.port, address: `ShipNow M4 disponible en http://127.0.0.1:${config.port}` });
   });
   server.on('error', async () => {
-    console.error('No se pudo abrir el puerto HTTP configurado.');
+    logger.fatal('HTTP_LISTEN_FAILED', { port: config.port });
     await disconnectDatabase();
+    await closeLogger();
     process.exitCode = 1;
   });
   let closing = false;
@@ -30,7 +41,7 @@ async function start() {
     const timeout = setTimeout(() => process.exit(1), 10000).unref();
     server.close(async () => {
       try { await disconnectDatabase(); }
-      finally { clearTimeout(timeout); }
+      finally { logger.info('SERVER_STOPPED'); await closeLogger(); clearTimeout(timeout); }
     });
   };
   process.once('SIGINT', shutdown);
@@ -38,7 +49,10 @@ async function start() {
 }
 
 start().catch(async (error) => {
-  console.error(error.message);
+  logger.fatal('STARTUP_FAILED', { stage: startupStage,
+    ...(startupStage === 'configuration' && error.message.startsWith('Configuración inválida:')
+      ? { reason: error.message } : {}) });
   await disconnectDatabase();
+  await closeLogger();
   process.exitCode = 1;
 });

@@ -1,3 +1,4 @@
+import { logger } from '../config/logger.config.js';
 import { AppError } from '../errors/app-error.js';
 import { ERRORS } from '../errors/error-catalog.js';
 
@@ -15,12 +16,13 @@ export function errorHandler(error, req, res, next) {
   } else if (error?.type === 'entity.too.large') {
     definition = ERRORS.PAYLOAD_TOO_LARGE;
   }
-  // Puente hasta Winston en M4: solo metadatos controlados, sin causas ni cuerpos.
-  if (definition.statusCode >= 500) {
-    console.error('API_ERROR', { code: definition.code,
-      ...(error instanceof AppError && error.context?.batchId
-        ? { batchId: error.context.batchId } : {}) });
+  const metadata = { code: definition.code, statusCode: definition.statusCode };
+  if (error instanceof AppError && /^[0-9a-f-]{36}$/.test(error.context?.batchId ?? '')) {
+    metadata.batchId = error.context.batchId;
   }
+  // Nunca serializar el error, sus causas, req.body, headers o URI de conexión.
+  const level = definition.statusCode >= 500 ? 'error' : 'warning';
+  logger.log(level, 'API_ERROR', metadata);
   res.status(definition.statusCode).json({
     status: 'error', error: definition.code, message: definition.message,
   });

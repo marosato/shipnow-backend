@@ -1,3 +1,4 @@
+import { logger } from '../config/logger.config.js';
 import { ERRORS } from '../errors/error-catalog.js';
 import * as userRepository from '../repositories/user.repository.js';
 import * as orderRepository from '../repositories/order.repository.js';
@@ -30,7 +31,12 @@ export function createMockService(repositories = {
   users: userRepository, orders: orderRepository, deliveries: deliveryRepository,
 }) {
   return {
-    preview(query) { return generateDataset(parseQueryQty(query)); },
+    preview(query) {
+      const qty = parseQueryQty(query);
+      const dataset = generateDataset(qty);
+      logger.debug('MOCK_PREVIEW_CREATED', { qty, batchId: dataset.batchId });
+      return dataset;
+    },
     async seed(body, query = {}) {
       if (Object.keys(query).length) throw new AppError(ERRORS.INVALID_MOCK_INPUT);
       validateBody(body, ['qty']);
@@ -52,6 +58,7 @@ export function createMockService(repositories = {
         }
         throw new AppError(ERRORS.MOCK_LOAD_FAILED, { cause: loadError, context: { batchId } });
       }
+      logger.info('MOCK_BATCH_INSERTED', { batchId, qty: users.length, total: users.length * 4 });
       return { batchId, inserted: { users: users.length, drivers: drivers.length,
         orders: orders.length, deliveries: deliveries.length, total: users.length + drivers.length + orders.length + deliveries.length },
         ids: { users: users.map(x => x._id), drivers: drivers.map(x => x._id),

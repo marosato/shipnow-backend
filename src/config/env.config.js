@@ -24,7 +24,11 @@ export function validateEnv(source) {
   if (!['true', 'false'].includes(flag)) {
     throw new Error('Configuración inválida: ENABLE_MOCKS debe ser true o false.');
   }
-  return Object.freeze({ port, nodeEnv, mongodbUri,
+  const loggerFlag = source.ENABLE_LOGGER_TEST ?? 'false';
+  if (!['true', 'false'].includes(loggerFlag)) {
+    throw new Error('Configuración inválida: ENABLE_LOGGER_TEST debe ser true o false.');
+  }
+  return Object.freeze({ loggerTestEnabled: loggerFlag === 'true' && nodeEnv !== 'production', port, nodeEnv, mongodbUri,
     mocksEnabled: flag === 'true' && nodeEnv !== 'production' });
 }
 

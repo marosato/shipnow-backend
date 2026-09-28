@@ -1,3 +1,5 @@
+import loggerRouter from './routes/logger.router.js';
+import { requestLogger } from './middlewares/request-logger.js';
 import { ERRORS } from './errors/error-catalog.js';
 import express from 'express';
 import usersRouter from './routes/users.router.js';
@@ -6,13 +8,20 @@ import mocksRouter from './routes/mocks.router.js';
 import { AppError } from './errors/app-error.js';
 import { errorHandler } from './middlewares/error-handler.js';
 
-export function createApp({ mocksEnabled = false } = {}) {
+export function createApp({ mocksEnabled = false, loggerTestEnabled = false } = {}) {
   const app = express();
   app.disable('x-powered-by');
+  app.use(requestLogger);
   app.use(express.json({ limit: '100kb' }));
-  app.use('/api/users', usersRouter);
-  app.use('/api/products', productsRouter);
-  if (mocksEnabled) app.use('/api/mocks', mocksRouter);
+  if (loggerTestEnabled) app.use(loggerRouter);
+  // Guardar el prefijo antes de que Express lo restaure al derivar un error.
+  const mount = (path, router) => app.use(path, (req, res, next) => {
+    res.locals.logBase = path;
+    next();
+  }, router);
+  mount('/api/users', usersRouter);
+  mount('/api/products', productsRouter);
+  if (mocksEnabled) mount('/api/mocks', mocksRouter);
   app.use((req, res, next) => next(new AppError(ERRORS.ROUTE_NOT_FOUND)));
   app.use(errorHandler);
   return app;

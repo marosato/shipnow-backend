@@ -1,3 +1,4 @@
+import { logger } from '../config/logger.config.js';
 import { ERRORS } from '../errors/error-catalog.js';
 import * as repository from '../repositories/user.repository.js';
 import { USER_ROLES } from '../constants/index.js';
@@ -15,7 +16,7 @@ export async function getById(id) {
   return user;
 }
 
-export function create(body) {
+export async function create(body) {
   validateBody(body, ['name', 'email']);
   const name = requiredText(body.name, 'name', 120);
   const email = requiredText(body.email, 'email', 254).toLowerCase();
@@ -23,5 +24,7 @@ export function create(body) {
     throw new AppError(ERRORS.INVALID_EMAIL);
   }
   // No se acepta un rol elevado desde el body de una ruta sin autenticación.
-  return repository.create({ name, email, role: USER_ROLES.USER });
+  const created = await repository.create({ name, email, role: USER_ROLES.USER });
+  logger.info('USER_CREATED', { id: String(created._id) });
+  return created;
 }
